@@ -34,6 +34,10 @@
         .player { padding: 8px 15px; border-radius: 5px; font-weight: bold; }
         .player.human { background: #d4edda; color: #155724; }
         .player.ai { background: #f8d7da; color: #721c24; }
+        .scoreboard { display: flex; justify-content: space-around; margin: 15px 0; padding: 10px; background: #f1f3f4; border-radius: 8px; border: 1px solid #ddd; }
+        .score { text-align: center; }
+        .score-value { font-size: 1.5em; font-weight: bold; color: #333; }
+        .score-label { font-size: 0.9em; color: #666; }
         .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px auto; max-width: 300px; }
         .cell { aspect-ratio: 1; background: #f8f9fa; border: 3px solid #dee2e6; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 2.5em; font-weight: bold; cursor: pointer; transition: all 0.3s; }
         .cell:hover { background: #e9ecef; transform: scale(1.05); }
@@ -99,6 +103,20 @@
                 </div>
                 <div class="mode-info" id="modeInfo">Difficulty: Easy</div>
             </div>
+            <div class="scoreboard" id="scoreboard">
+                <div class="score">
+                    <div class="score-value" id="playerWins">0</div>
+                    <div class="score-label">Player Wins</div>
+                </div>
+                <div class="score">
+                    <div class="score-value" id="aiWins">0</div>
+                    <div class="score-label">AI Wins</div>
+                </div>
+                <div class="score">
+                    <div class="score-value" id="ties">0</div>
+                    <div class="score-label">Ties</div>
+                </div>
+            </div>
             <div class="board" id="board"></div>
             <div class="controls">
                 <button class="btn btn-reset" onclick="resetGame()">New Game</button>
@@ -118,6 +136,9 @@
                 this.gameOver = false;
                 this.mode = 'easy';
                 this.playerName = "Player";
+                this.playerWins = 0;
+                this.aiWins = 0;
+                this.ties = 0;
             }
 
             resetGame() {
@@ -137,8 +158,14 @@
                 if (this.checkWinner(this.currentPlayer)) {
                     this.winner = this.currentPlayer;
                     this.gameOver = true;
+                    if (this.currentPlayer === 'X') {
+                        this.playerWins++;
+                    } else {
+                        this.aiWins++;
+                    }
                 } else if (!this.board.includes(' ')) {
                     this.gameOver = true;
+                    this.ties++;
                 } else {
                     this.currentPlayer = 'O';
                 }
@@ -259,8 +286,10 @@
                     if (this.checkWinner('O')) {
                         this.winner = 'O';
                         this.gameOver = true;
+                        this.aiWins++;
                     } else if (!this.board.includes(' ')) {
                         this.gameOver = true;
+                        this.ties++;
                     } else {
                         this.currentPlayer = 'X';
                     }
@@ -276,7 +305,10 @@
                     winner: this.winner,
                     game_over: this.gameOver,
                     mode: this.mode,
-                    player_name: this.playerName
+                    player_name: this.playerName,
+                    player_wins: this.playerWins,
+                    ai_wins: this.aiWins,
+                    ties: this.ties
                 };
             }
         }
@@ -322,6 +354,7 @@
                 initializeBoard();
                 updatePlayerDisplay();
                 updateModeDisplay();
+                updateScoreboard();
             } else {
                 alert('Please enter your name to start the game!');
                 nameInput.focus();
@@ -335,6 +368,13 @@
         function updateModeDisplay() {
             const modeNames = { 'easy': 'Easy', 'medium': 'Medium', 'hard': 'Hard' };
             document.getElementById('modeInfo').textContent = `Difficulty: ${modeNames[currentGameMode]}`;
+        }
+
+        function updateScoreboard() {
+            const gameState = game.getGameState();
+            document.getElementById('playerWins').textContent = gameState.player_wins;
+            document.getElementById('aiWins').textContent = gameState.ai_wins;
+            document.getElementById('ties').textContent = gameState.ties;
         }
 
         function initializeBoard() {
@@ -358,9 +398,11 @@
                         setTimeout(() => {
                             game.makeAIMove();
                             updateBoard();
+                            updateScoreboard();
                         }, 500);
                     }
                     updateBoard();
+                    updateScoreboard();
                 }
             }
         }
