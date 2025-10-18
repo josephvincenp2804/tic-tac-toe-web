@@ -190,7 +190,7 @@ game = TicTacToeGame()
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return send_from_directory(os.getcwd(), 'index.html')
 
 @app.route('/api/game/state', methods=['GET'])
 def get_game_state():
@@ -244,4 +244,5 @@ def set_player_name():
         return jsonify({'success': False, 'error': 'Name cannot be empty'})
 
 if __name__ == '__main__':
+
     app.run(debug=True, host='0.0.0.0', port=5000)
