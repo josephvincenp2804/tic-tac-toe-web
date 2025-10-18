@@ -110,6 +110,178 @@
     </div>
 
     <script>
+        class TicTacToeGame {
+            constructor() {
+                this.board = [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '];
+                this.currentPlayer = 'X';
+                this.winner = null;
+                this.gameOver = false;
+                this.mode = 'easy';
+                this.playerName = "Player";
+            }
+
+            resetGame() {
+                this.board = [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '];
+                this.currentPlayer = 'X';
+                this.winner = null;
+                this.gameOver = false;
+            }
+
+            makeMove(position) {
+                if (this.gameOver || this.board[position] !== ' ') {
+                    return false;
+                }
+
+                this.board[position] = this.currentPlayer;
+
+                if (this.checkWinner(this.currentPlayer)) {
+                    this.winner = this.currentPlayer;
+                    this.gameOver = true;
+                } else if (!this.board.includes(' ')) {
+                    this.gameOver = true;
+                } else {
+                    this.currentPlayer = 'O';
+                }
+
+                return true;
+            }
+
+            checkWinner(player) {
+                const winPatterns = [
+                    [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                    [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                    [0, 4, 8], [2, 4, 6]
+                ];
+
+                return winPatterns.some(pattern =>
+                    pattern.every(index => this.board[index] === player)
+                );
+            }
+
+            getAIMoveEasy() {
+                const availableMoves = this.board.map((cell, index) => cell === ' ' ? index : null).filter(index => index !== null);
+                return availableMoves.length > 0 ? availableMoves[Math.floor(Math.random() * availableMoves.length)] : null;
+            }
+
+            getAIMoveMedium() {
+                const availableMoves = this.board.map((cell, index) => cell === ' ' ? index : null).filter(index => index !== null);
+
+                for (let move of availableMoves) {
+                    this.board[move] = 'O';
+                    if (this.checkWinner('O')) {
+                        this.board[move] = ' ';
+                        return move;
+                    }
+                    this.board[move] = ' ';
+                }
+
+                for (let move of availableMoves) {
+                    this.board[move] = 'X';
+                    if (this.checkWinner('X')) {
+                        this.board[move] = ' ';
+                        return move;
+                    }
+                    this.board[move] = ' ';
+                }
+
+                if (Math.random() < 0.7) {
+                    const smartMoves = availableMoves.filter(move => move === 4 || [0, 2, 6, 8].includes(move));
+                    if (smartMoves.length > 0) {
+                        return smartMoves[Math.floor(Math.random() * smartMoves.length)];
+                    }
+                }
+
+                return availableMoves[Math.floor(Math.random() * availableMoves.length)];
+            }
+
+            getAIMoveHard() {
+                let bestScore = -Infinity;
+                let bestMove = null;
+
+                for (let i = 0; i < 9; i++) {
+                    if (this.board[i] === ' ') {
+                        this.board[i] = 'O';
+                        let score = this.minimax(0, false);
+                        this.board[i] = ' ';
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestMove = i;
+                        }
+                    }
+                }
+                return bestMove;
+            }
+
+            minimax(depth, isMaximizing) {
+                if (this.checkWinner('O')) return 1;
+                if (this.checkWinner('X')) return -1;
+                if (!this.board.includes(' ')) return 0;
+
+                if (isMaximizing) {
+                    let bestScore = -Infinity;
+                    for (let i = 0; i < 9; i++) {
+                        if (this.board[i] === ' ') {
+                            this.board[i] = 'O';
+                            let score = this.minimax(depth + 1, false);
+                            this.board[i] = ' ';
+                            bestScore = Math.max(score, bestScore);
+                        }
+                    }
+                    return bestScore;
+                } else {
+                    let bestScore = Infinity;
+                    for (let i = 0; i < 9; i++) {
+                        if (this.board[i] === ' ') {
+                            this.board[i] = 'X';
+                            let score = this.minimax(depth + 1, true);
+                            this.board[i] = ' ';
+                            bestScore = Math.min(score, bestScore);
+                        }
+                    }
+                    return bestScore;
+                }
+            }
+
+            makeAIMove() {
+                if (this.currentPlayer !== 'O' || this.gameOver) return false;
+
+                let aiMove;
+                if (this.mode === 'easy') {
+                    aiMove = this.getAIMoveEasy();
+                } else if (this.mode === 'medium') {
+                    aiMove = this.getAIMoveMedium();
+                } else {
+                    aiMove = this.getAIMoveHard();
+                }
+
+                if (aiMove !== null) {
+                    this.board[aiMove] = 'O';
+                    if (this.checkWinner('O')) {
+                        this.winner = 'O';
+                        this.gameOver = true;
+                    } else if (!this.board.includes(' ')) {
+                        this.gameOver = true;
+                    } else {
+                        this.currentPlayer = 'X';
+                    }
+                    return true;
+                }
+                return false;
+            }
+
+            getGameState() {
+                return {
+                    board: [...this.board],
+                    current_player: this.currentPlayer,
+                    winner: this.winner,
+                    game_over: this.gameOver,
+                    mode: this.mode,
+                    player_name: this.playerName
+                };
+            }
+        }
+
+        let game = new TicTacToeGame();
         let currentGameMode = 'easy';
         let playerName = 'Player';
         let countdownTimer = null;
@@ -142,8 +314,9 @@
             const name = nameInput.value.trim();
             if (name) {
                 playerName = name;
-                setPlayerName(name);
-                setGameMode(currentGameMode);
+                game.playerName = name;
+                game.mode = currentGameMode;
+                game.resetGame();
                 document.getElementById('welcomeScreen').classList.add('hidden');
                 document.getElementById('gameScreen').classList.remove('hidden');
                 initializeBoard();
@@ -152,30 +325,6 @@
             } else {
                 alert('Please enter your name to start the game!');
                 nameInput.focus();
-            }
-        }
-
-        async function setPlayerName(name) {
-            try {
-                await fetch('/api/player/name', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: name })
-                });
-            } catch (error) {
-                console.error('Error setting player name:', error);
-            }
-        }
-
-        async function setGameMode(mode) {
-            try {
-                await fetch('/api/game/mode', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mode: mode })
-                });
-            } catch (error) {
-                console.error('Error setting game mode:', error);
             }
         }
 
@@ -198,28 +347,26 @@
                 cell.addEventListener('click', () => makeMove(i));
                 board.appendChild(cell);
             }
-            updateGameState();
+            updateBoard();
         }
 
-        async function makeMove(position) {
-            try {
-                const response = await fetch('/api/game/move', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ position: position })
-                });
-                const data = await response.json();
-                if (data.success) {
-                    updateBoard(data.game_state);
-                } else {
-                    console.log('Invalid move:', data.error);
+        function makeMove(position) {
+            if (game.currentPlayer === 'X' && !game.gameOver) {
+                const success = game.makeMove(position);
+                if (success) {
+                    if (!game.gameOver) {
+                        setTimeout(() => {
+                            game.makeAIMove();
+                            updateBoard();
+                        }, 500);
+                    }
+                    updateBoard();
                 }
-            } catch (error) {
-                console.error('Error making move:', error);
             }
         }
 
-        function updateBoard(gameState) {
+        function updateBoard() {
+            const gameState = game.getGameState();
             const cells = document.querySelectorAll('.cell');
             const status = document.getElementById('status');
             const message = document.getElementById('message');
@@ -320,31 +467,14 @@
             }, 5000);
         }
 
-        async function resetGame() {
+        function resetGame() {
             clearInterval(countdownTimer);
-            try {
-                const response = await fetch('/api/game/reset', { method: 'POST' });
-                const data = await response.json();
-                if (data.success) {
-                    updateBoard(data.game_state);
-                }
-            } catch (error) {
-                console.error('Error resetting game:', error);
-            }
+            game.resetGame();
+            updateBoard();
         }
 
         function quitToStart() {
             showStartScreen();
-        }
-
-        async function updateGameState() {
-            try {
-                const response = await fetch('/api/game/state');
-                const gameState = await response.json();
-                updateBoard(gameState);
-            } catch (error) {
-                console.error('Error fetching game state:', error);
-            }
         }
 
         document.getElementById('playerName').addEventListener('keypress', function(e) {
